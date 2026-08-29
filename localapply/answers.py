@@ -65,11 +65,17 @@ def resolve_answer(label: str, profile: dict, answers: dict, llm) -> str:
         return profile.get("links", {}).get("linkedin", "") or ASK_HUMAN
     if "github" in ll:
         return profile.get("links", {}).get("github", "") or ASK_HUMAN
-    if re.search(r"location|city", ll):
-        loc = profile.get("location", {})
+    loc = profile.get("location", {})
+    if ll.strip() in {"state", "state/province", "state / province", "province"}:
+        return loc.get("state", "") or ASK_HUMAN
+    if ll.strip() in {"city", "town"} or re.search(r"\bcity\b", ll):
+        return loc.get("city", "") or ASK_HUMAN
+    if re.search(r"location|current location|where are you", ll):
         return f"{loc.get('city','')}, {loc.get('state','')}".strip(", ") or ASK_HUMAN
+    if re.search(r"\bcountry\b", ll):
+        return loc.get("country", "") or ASK_HUMAN
     if "zip" in ll or "postal" in ll:
-        return profile.get("location", {}).get("zip", "") or ASK_HUMAN
+        return loc.get("zip", "") or ASK_HUMAN
 
     # 3. Free-text → local LLM, grounded in the profile (may itself return ASK_HUMAN).
     prompt = (

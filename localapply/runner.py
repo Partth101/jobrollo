@@ -38,6 +38,12 @@ def run(jobs: list[dict], profile: dict, answers: dict, llm, cfg: dict) -> None:
             try:
                 page.goto(job["url"], wait_until="domcontentloaded", timeout=45000)
                 _dismiss_cookies(page)
+                # Wait for the (often client-side-rendered) form before the agent looks.
+                try:
+                    page.wait_for_selector("input, textarea, select", timeout=15000)
+                    page.wait_for_timeout(800)
+                except Exception:
+                    pass
                 result = agent.run(page, profile, answers)
             except Exception as e:  # noqa: BLE001
                 console.print(f"[red]Error: {e}")
