@@ -1,0 +1,30 @@
+# LocalApply configuration. Copy to config.yaml and edit.
+
+llm:
+  # Local by default. Point this at any Ollama server.
+  provider: ollama
+  base_url: http://localhost:11434
+  model: llama3.1:8b
+  temperature: 0.2          # low = faithful to your profile, less "creative"
+  # To use a cloud model instead (optional, not the default), set:
+  #   provider: openai_compatible
+  #   base_url: https://api.openai.com/v1
+  #   api_key_env: OPENAI_API_KEY
+
+profile: profile.json
+answers: answers.json
+
+browser:
+  headless: false           # keep visible — you review before submitting
+  slow_mo_ms: 250           # gentle pacing; be a good citizen
+  throttle_between_jobs_s: 30
+
+runner:
+  # LocalApply NEVER clicks submit. This cannot be turned off.
+  human_gated: true
+  # If a required field can't be answered honestly, stop instead of guessing.
+  stop_on_unanswerable_required: true
+
+discovery:
+  sources: [greenhouse, lever, ashby]   # public ATS boards only
+  max_per_source: 20

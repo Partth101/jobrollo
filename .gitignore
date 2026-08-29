@@ -1,0 +1,28 @@
+# Personal data — NEVER commit these
+profile.json
+answers.json
+queue.json
+tracker.json
+resumes/
+*.pdf
+*.docx
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# Playwright
+playwright-report/
+test-results/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

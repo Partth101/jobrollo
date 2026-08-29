@@ -1,0 +1,30 @@
+[project]
+name = "localapply"
+version = "0.1.0"
+description = "The honest, local-first job-application copilot. ATS-first, human-gated, runs on Ollama."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Parth Ghayal" }]
+keywords = ["job-search", "ats", "greenhouse", "lever", "ashby", "ollama", "llm", "automation", "playwright"]
+dependencies = [
+    "playwright>=1.44",
+    "httpx>=0.27",
+    "pydantic>=2.6",
+    "typer>=0.12",
+    "rich>=13.7",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.5"]
+
+[project.scripts]
+localapply = "localapply.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
