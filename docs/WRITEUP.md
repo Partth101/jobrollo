@@ -120,7 +120,7 @@ is also what keeps the tool on the right side of platform Terms of Service.
 ## Try it
 
 JobRollo is open source (MIT). Code, adapters, and setup:
-`https://github.com/<your-username>/jobrollo`.
+`https://github.com/Partth101/jobrollo`.
 
 ---
 
