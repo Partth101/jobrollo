@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import time
 
-from playwright.sync_api import sync_playwright
 from rich.console import Console
 from rich.panel import Panel
 
@@ -20,6 +19,9 @@ console = Console()
 
 
 def run(jobs: list[dict], profile: dict, answers: dict, llm, cfg: dict) -> None:
+    # Imported lazily so `discover`/`check` work without Playwright installed.
+    from playwright.sync_api import sync_playwright
+
     b = cfg.get("browser", {})
     tracker = Tracker(cfg.get("tracker_path", "tracker.json"))
     agent = Agent(llm, resume_path=profile["resume_path"],
