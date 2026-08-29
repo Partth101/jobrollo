@@ -62,18 +62,26 @@ ollama pull llama3.1:8b        # or qwen2.5, mistral, etc.
 pip install -e .
 playwright install chromium
 
-# 3. Create your profile from the example
-cp examples/profile.example.json profile.json
-$EDITOR profile.json           # fill in your real details
+# 3. Create your ONE private config from the example, then fill it in
+cp secret.example.yaml secret.yaml
+cp examples/companies.example.txt companies.txt
+$EDITOR secret.yaml            # model, your details, background, answers, search
+$EDITOR companies.txt          # which ATS boards to search
 
-# 4. Discover roles
-localapply discover --keywords "AI Engineer,LLM Engineer,Healthcare AI" --location "United States"
+# 4. Check the local model is reachable
+localapply check
 
-# 5. Review the queue it built, then apply (fills to the submit page and STOPS)
+# 5. Discover roles (reads titles/locations from secret.yaml)
+localapply discover
+
+# 6. Review the queue it built, then apply (fills to the submit page and STOPS)
 localapply apply --queue queue.json
 ```
 
-You review each filled application in the browser window and click **Submit** yourself.
+Everything you configure lives in one git-ignored file, **`secret.yaml`**: which model to
+use, your personal details, the background the AI may draw on, your canonical application
+answers, and what jobs to search for. You review each filled application in the browser and
+click **Submit** yourself.
 
 ## How it works
 
@@ -84,10 +92,9 @@ discover ─► queue.json ─► [ you cull the list ] ─► apply (per job):
                        ─► STOP at the submit/review step  ─►  you review + submit
 ```
 
-Everything the user touches is a **file, not code**: `config.yaml` (search titles as an
-OR-list, locations, résumé path via `profile.json`), `profile.json` (personal details),
-`answers.json` (canonical screening answers), `companies.txt` (which ATS boards to search).
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the agent design.
+Everything the user touches is a **file, not code**: one private `secret.yaml` (model,
+personal details, background, answers, search terms) plus `companies.txt` (which ATS boards to
+search). See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the agent design.
 
 ## Why human-gated?
 

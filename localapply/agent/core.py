@@ -28,6 +28,12 @@ def _key(label: str) -> str:
     return re.sub(r"\s+", " ", (label or "").strip().lower())
 
 
+def _fkey(f) -> str:
+    """Dedup key for a field. Prefer the label; fall back to kind+options for unlabeled ones
+    (options are stable across re-perceptions, unlike the positional ref)."""
+    return _key(f.label) or f"__{f.kind}:{'|'.join(f.options[:3])}"
+
+
 @dataclass
 class Flag:
     label: str
@@ -57,6 +63,7 @@ class Agent:
         # reassigns f0..fN every cycle, and choice/select fields don't report a value back,
         # so a ref- or value-based guard would re-act them forever.
         handled: set[str] = set()
+        stalls = 0
 
         for step in range(self.step_budget):
             res.steps = step + 1
@@ -66,11 +73,12 @@ class Agent:
                 res.stopped_reason = "reached submit/review step — human gate"
                 break
 
-            pending = [f for f in obs.actionable() if _key(f.label) not in handled]
+            pending = [f for f in obs.actionable() if _fkey(f) not in handled]
             if not pending:
                 res.stopped_reason = "no actionable fields left"
                 break
 
+            fld = pending[0]
             obs = Observation(url=obs.url, fields=pending, at_submit_step=False)
             action = self.policy.decide(obs, profile, answers, mem)
 
@@ -78,10 +86,18 @@ class Agent:
                 res.stopped_reason = "policy finished"
                 break
 
-            label = self._label(obs, action.ref)
+            # One key per field, used for BOTH filtering and marking, so nothing loops —
+            # even fields with empty labels (keyed by kind+ref as a fallback).
+            handled.add(_fkey(fld))
+            ok_before = len(res.filled)
             self._apply(action, page, obs, res, mem)
-            # Always mark handled (even upload/failed actions) so we never loop on one field.
-            handled.add(_key(label) or f"__{action.tool}")
+
+            # Safety net: if several actions in a row neither fill nor flag, stop for the human.
+            progressed = len(res.filled) > ok_before or action.tool == "flag_for_human"
+            stalls = 0 if progressed else stalls + 1
+            if stalls >= 6:
+                res.stopped_reason = "no progress — stopping for human review"
+                break
 
         mem.flush()
         return res

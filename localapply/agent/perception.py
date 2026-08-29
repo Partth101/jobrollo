@@ -210,6 +210,10 @@ def _classify(el):
         # Skip the résumé button-group; the file input handles the actual upload.
         if opts and {o.lower() for o in opts} & RESUME_WIDGET_OPTS:
             return None, None, None
+        # A wrapper with no pickable options is not actionable (e.g. a closed react-select
+        # container that duplicates the real <input>); skip it to avoid empty-label loops.
+        if not opts:
+            return None, None, None
         return "choice", opts, ""
     return None, None, None
 

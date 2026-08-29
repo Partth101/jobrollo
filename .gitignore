@@ -1,8 +1,12 @@
-# Personal data — NEVER commit these
+# Personal data / secrets — NEVER commit these
+secret.yaml
+secret.yml
 profile.json
 answers.json
+config.yaml
 queue.json
 tracker.json
+.localapply_memory.json
 resumes/
 *.pdf
 *.docx

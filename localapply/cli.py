@@ -37,7 +37,7 @@ def _load_companies(path: str) -> list[tuple[str, str]]:
 
 
 @app.command()
-def check(config: str = "config.yaml"):
+def check(config: str = "secret.yaml"):
     """Verify the local LLM is reachable and config loads."""
     cfg = load_config(config)
     llm = load_llm(cfg)
@@ -53,12 +53,9 @@ def _resolve_search(cfg: dict, keywords: str | None, location: str | None):
     """Everything is configurable. Precedence: CLI flag > config.search > profile.job_targets."""
     search = cfg.get("search", {})
     titles = keywords or search.get("titles")
-    if not titles:  # fall back to the profile's job targets
-        try:
-            jt = load_json(cfg.get("profile", "profile.json")).get("job_targets", {})
-            titles = (jt.get("titles") or []) + (jt.get("keywords") or [])
-        except Exception:
-            titles = []
+    if not titles:  # fall back to the profile's job targets, if present
+        jt = cfg.get("profile", {}).get("job_targets", {})
+        titles = (jt.get("titles") or []) + (jt.get("keywords") or [])
     locations = location or search.get("locations")
     remote_ok = bool(search.get("remote_ok", True))
     companies = search.get("companies", "companies.txt")
@@ -72,19 +69,18 @@ def discover_jobs(
     location: str = typer.Option(None, "--location", help="OR-list of locations. Omit to use config."),
     companies: str = typer.Option(None, help="File of 'ats slug' lines. Omit to use config."),
     out: str = typer.Option("queue.json", help="Where to write the queue"),
-    config: str = "config.yaml",
+    config: str = "secret.yaml",
 ):
     """Search public ATS boards for matching roles and write a reviewable queue.
 
     With no flags at all, this reads titles/locations/companies entirely from your
-    config.yaml (or profile.json job_targets). Flags are optional overrides.
+    secret.yaml (the `search:` section). Flags are optional overrides.
     """
     cfg = load_config(config)
     titles, locations, remote_ok, comp_file = _resolve_search(cfg, keywords, location)
     companies = companies or comp_file
     if not titles:
-        console.print("[red]No search titles found. Set search.titles in config.yaml "
-                      "or job_targets in profile.json.")
+        console.print("[red]No search titles found. Set search.titles in secret.yaml.")
         raise typer.Exit(1)
     comps = _load_companies(companies)
     jobs = discover(comps, titles, locations=locations, remote_ok=remote_ok,
@@ -107,17 +103,17 @@ app.command(name="discover")(discover_jobs)
 @app.command()
 def apply(
     queue: str = typer.Option("queue.json", help="Queue file from `discover`"),
-    config: str = "config.yaml",
+    config: str = "secret.yaml",
 ):
     """Fill each job to the submit page and STOP for your review. Never submits."""
     cfg = load_config(config)
-    profile = load_json(cfg.get("profile", "profile.json"))
-    answers = load_json(cfg.get("answers", "answers.json"))
+    profile = cfg.get("profile", {})
+    answers = cfg.get("answers", {})
 
     resume = profile.get("resume_path", "")
     if not resume or not os.path.exists(resume):
         console.print(f"[red]Résumé not found at '{resume}'.[/] "
-                      "Set resume_path in profile.json to your résumé's location on disk.")
+                      "Set profile.resume_path in secret.yaml to your résumé's location on disk.")
         raise typer.Exit(1)
 
     llm = load_llm(cfg)
