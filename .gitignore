@@ -30,3 +30,5 @@ test-results/
 .DS_Store
 .idea/
 .vscode/
+companies.txt
+.localapply_memory.json
