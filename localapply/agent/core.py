@@ -80,8 +80,8 @@ class Agent:
 
             label = self._label(obs, action.ref)
             self._apply(action, page, obs, res, mem)
-            if action.tool != "upload_resume":       # résumé has no single label
-                handled.add(_key(label))
+            # Always mark handled (even upload/failed actions) so we never loop on one field.
+            handled.add(_key(label) or f"__{action.tool}")
 
         mem.flush()
         return res

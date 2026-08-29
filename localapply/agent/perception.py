@@ -81,33 +81,102 @@ def _visible_text(page) -> str:
 
 def _extract_fields(page) -> list[Field]:
     fields: list[Field] = []
-    idx = 0
+    idx = [0]
 
     def add(handle, kind, label, options=None, value="", required=False):
-        nonlocal idx
-        ref = f"f{idx}"
+        ref = f"f{idx[0]}"
+        idx[0] += 1
         try:
             handle.evaluate("(el, r) => el.setAttribute('data-la-ref', r)", ref)
         except Exception:
             pass
-        fields.append(Field(ref=ref, kind=kind, label=label or "",
+        label = (label or "").strip()
+        if label.lower() in {"search", "search jobs", "keyword"}:
+            return
+        fields.append(Field(ref=ref, kind=kind, label=label,
                             options=options or [], value=value or "", required=required))
-        idx += 1
 
+    # 1. Radio + checkbox groups (grouped by `name`). A radio/checkbox's OWN label is the
+    #    option ("Yes"/"English"); the real QUESTION lives on the card/fieldset container.
+    for typ, group_kind in (("radio", "choice"), ("checkbox", "multiselect")):
+        groups: dict[str, list] = {}
+        for el in page.query_selector_all(f"input[type={typ}]"):
+            try:
+                key = el.get_attribute("name") or _own_label(el)
+                groups.setdefault(key, []).append(el)
+            except Exception:
+                continue
+        for els in groups.values():
+            first = els[0]
+            opts = [o for o in (_own_label(e) for e in els) if o]
+            question = _clean_label(_container_text(first), opts) or _label_for(first)
+            required = any(_required(e) for e in els)
+            kind = group_kind if len(els) > 1 else ("choice" if typ == "radio" else "checkbox")
+            add(first, kind, question, opts, "", required)
+
+    # 2. Everything else (text, textarea, native + react selects). Skip already-tagged radios.
     for el in page.query_selector_all(
         "input, textarea, select, [role=combobox], [role=radiogroup], [role=group]"
     ):
         try:
+            if el.get_attribute("type") in {"radio", "checkbox"}:
+                continue
             kind, options, value = _classify(el)
             if kind is None:
                 continue
             label = _label_for(el)
-            if label.strip().lower() in {"search", "search jobs", "keyword"}:
-                continue  # site/location search boxes, not application questions
+            if not label or _noisy(label):
+                label = _clean_label(_container_text(el), options) or label
             add(el, kind, label, options, value, _required(el))
         except Exception:
             continue
     return fields
+
+
+def _noisy(label: str) -> bool:
+    """A label is 'noisy' when innerText scooped up the option list (common on native selects)."""
+    return len(label) > 80 or "select ..." in label.lower() or "select..." in label.lower()
+
+
+def _own_label(el) -> str:
+    """A radio/checkbox's OWN label — the option text (Yes / English / I consent)."""
+    for js in (
+        "e => e.labels && e.labels[0] ? e.labels[0].innerText : ''",
+        "e => e.getAttribute('aria-label') || ''",
+        "e => { const p = e.closest('label'); return p ? p.innerText : ''; }",
+        "e => e.value || ''",
+    ):
+        try:
+            t = el.evaluate(js)
+            if t and t.strip():
+                return re.sub(r"\s+", " ", t).strip()[:60]
+        except Exception:
+            continue
+    return ""
+
+
+def _container_text(el) -> str:
+    """Full text of the field's QUESTION container (question + its options, to be stripped)."""
+    js = """e => {
+      const c = e.closest('li.application-question, .application-question, fieldset,'
+        + '[class*=QuestionEntry], [class*=FieldEntry]');
+      return c ? c.innerText : '';
+    }"""
+    try:
+        return re.sub(r"\s+", " ", el.evaluate(js)).strip()
+    except Exception:
+        return ""
+
+
+def _clean_label(raw: str, opts: list[str]) -> str:
+    """Turn a container's text into just the question by removing option strings + placeholders."""
+    if not raw:
+        return ""
+    for o in sorted(opts, key=len, reverse=True):        # remove longest options first
+        raw = raw.replace(o, " ")
+    raw = re.sub(r"select\s*\.\.\.", " ", raw, flags=re.IGNORECASE)
+    raw = re.sub(r"\s+", " ", raw).replace("✱", "").replace("*", "").strip(" -:••")
+    return raw
 
 
 # The résumé upload widget renders as a button group; the real work is done by the file input.

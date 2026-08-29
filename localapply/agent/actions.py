@@ -107,22 +107,61 @@ def _select_option(a: Action, page, _r) -> ActionResult:
     return ActionResult(ok=False, detail=f"no option matched {a.value!r}")
 
 
-def _click_choice(a: Action, page, _r) -> ActionResult:
-    scope = _loc(page, a.ref)
-    pool = []
-    for sel in ("button", "input[type=radio]", "label", "[role=option]"):
-        pool += (scope.locator(sel).all() if scope.count() else page.locator(sel).all())
-    texts = []
-    for el in pool:
+def _radio_label(el) -> str:
+    for js in ("e => e.labels && e.labels[0] ? e.labels[0].innerText : ''",
+               "e => { const l = e.closest('label'); return l ? l.innerText : ''; }",
+               "e => e.getAttribute('aria-label') || e.value || ''"):
         try:
-            texts.append(el.inner_text())
+            t = el.evaluate(js)
+            if t and t.strip():
+                return t.strip()
         except Exception:
-            texts.append("")
-    idx = _best_match(a.value, texts)
+            continue
+    return ""
+
+
+def _click_choice(a: Action, page, _r) -> ActionResult:
+    el = page.query_selector(f"[data-la-ref='{a.ref}']")
+
+    # Radio group: click the sibling radio (same `name`) whose label/value matches.
+    if el and (el.get_attribute("type") or "") == "radio":
+        name = el.get_attribute("name")
+        radios = page.query_selector_all(f'input[type=radio][name="{name}"]') if name else [el]
+        idx = _best_match(a.value, [_radio_label(r) for r in radios])
+        if idx is not None:
+            radios[idx].click()
+            return ActionResult(ok=True, detail=f"radio {a.value}")
+        return ActionResult(ok=False, detail=f"no radio matched {a.value!r}")
+
+    # Otherwise: buttons / listbox options — search the field's container, then page-wide.
+    roots = []
+    if el:
+        container = el.evaluate_handle(
+            "e => e.closest('fieldset,[class*=field],[class*=Field],[role=group],[role=radiogroup]') || e"
+        ).as_element()
+        if container:
+            roots.append(container)
+    els = []
+    for root in (roots or [None]):
+        scope = root if root else page
+        for sel in ("button", "input[type=radio]", "label", "[role=option]"):
+            els += scope.query_selector_all(sel)
+        if els:
+            break
+    if not els:
+        els = page.query_selector_all("button, [role=option], label")
+    idx = _best_match(a.value, [_safe_text(e) for e in els])
     if idx is not None:
-        pool[idx].click()
-        return ActionResult(ok=True, detail=f"clicked {texts[idx].strip()}")
+        els[idx].click()
+        return ActionResult(ok=True, detail=f"clicked {a.value}")
     return ActionResult(ok=False, detail=f"no choice matched {a.value!r}")
+
+
+def _safe_text(e) -> str:
+    try:
+        return e.inner_text()
+    except Exception:
+        return ""
 
 
 def _upload_resume(_a: Action, page, resume_path: str) -> ActionResult:

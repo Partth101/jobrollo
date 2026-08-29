@@ -21,7 +21,9 @@ from ..llm import ASK_HUMAN
 from .actions import Action
 from .perception import Field, Observation
 
-RESUME_HINT = re.compile(r"\b(resume|cv|curriculum)\b", re.IGNORECASE)
+# Match only actual résumé-upload fields, not any question that mentions "resume"
+# (e.g. "may we share your resume with partners?" is a consent, not an upload).
+RESUME_HINT = re.compile(r"^(resume/?cv|attach resume|upload resume|resume\s*$)", re.IGNORECASE)
 
 # Field kind → tool.
 TOOL_FOR_KIND = {
@@ -49,6 +51,15 @@ class Policy:
         # Résumé upload: detected by a file input or a résumé/attach label.
         if fld.kind == "file" or RESUME_HINT.search(fld.label):
             return Action(tool="upload_resume", ref=fld.ref, reason="attach résumé")
+
+        # Multi-selects (e.g. "languages, check all that apply") and lone consent checkboxes
+        # are judgment calls we won't make for the candidate.
+        if fld.kind == "multiselect":
+            return Action(tool="flag_for_human", ref=fld.ref,
+                          reason="Multi-select — please choose the applicable options")
+        if fld.kind == "checkbox":
+            return Action(tool="flag_for_human", ref=fld.ref,
+                          reason="Checkbox/consent — your decision")
 
         # A grounded value — remembered, else resolved (bank → profile → honest LLM).
         value = memory.recall(fld.label)
