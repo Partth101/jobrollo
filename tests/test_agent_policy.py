@@ -6,10 +6,10 @@ The loop picks the field; the policy decides how to handle it. Honesty is enforc
 """
 import tempfile
 
-from localapply.agent.memory import Memory
-from localapply.agent.perception import Field, Observation
-from localapply.agent.policy import Policy
-from localapply.llm import ASK_HUMAN
+from jobrollo.agent.memory import Memory
+from jobrollo.agent.perception import Field, Observation
+from jobrollo.agent.policy import Policy
+from jobrollo.llm import ASK_HUMAN
 
 
 class FakeLLM:

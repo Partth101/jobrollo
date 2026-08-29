@@ -1,6 +1,6 @@
 # Building an honest, local-first job-application copilot
 
-*A technical writeup of LocalApply — why the popular auto-apply bots fail, and the design
+*A technical writeup of JobRollo — why the popular auto-apply bots fail, and the design
 choices behind a tool that runs entirely on your machine, targets the boards that matter,
 and never lies on a form.*
 
@@ -28,7 +28,7 @@ answers, filling forms) while keeping a human accountable and their accounts saf
 ## The core idea: an autonomous agent, not a per-site script
 
 Every popular tool in this category hardcodes one company's form. That's fragile (a redesign
-breaks it) and narrow (someone has to write each site by hand). LocalApply instead runs a small
+breaks it) and narrow (someone has to write each site by hand). JobRollo instead runs a small
 **autonomous agent** with a classic loop — *perceive → decide → act → verify* — that generalizes
 across forms:
 
@@ -56,7 +56,7 @@ entirely on a local model. That combination is what I hadn't seen in the existin
 
 ### 1. ATS-first, not LinkedIn-first
 
-Instead of fighting LinkedIn's adversarial anti-bot stack, LocalApply targets the ATS boards
+Instead of fighting LinkedIn's adversarial anti-bot stack, JobRollo targets the ATS boards
 direct employers actually use — and which expose **public APIs** for both discovery and
 application. Discovery hits documented endpoints like
 `boards-api.greenhouse.io/v1/boards/{company}/jobs`, so there's no scraping. Application uses
@@ -119,8 +119,8 @@ is also what keeps the tool on the right side of platform Terms of Service.
 
 ## Try it
 
-LocalApply is open source (MIT). Code, adapters, and setup:
-`https://github.com/<your-username>/localapply`.
+JobRollo is open source (MIT). Code, adapters, and setup:
+`https://github.com/<your-username>/jobrollo`.
 
 ---
 

@@ -7,7 +7,7 @@ Given a form question label, produce an answer by trying, in order:
 
 Any step may return the ``ASK_HUMAN`` sentinel, which propagates up and causes the runner
 to leave the field for the human. A fabricated answer is never acceptable — the whole point
-of LocalApply is that a required field you can't answer truthfully is *your* decision.
+of JobRollo is that a required field you can't answer truthfully is *your* decision.
 """
 from __future__ import annotations
 

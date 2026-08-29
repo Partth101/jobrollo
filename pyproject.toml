@@ -1,12 +1,12 @@
 [project]
-name = "localapply"
+name = "jobrollo"
 version = "0.1.0"
-description = "The honest, local-first job-application copilot. ATS-first, human-gated, runs on Ollama."
+description = "The agentic, local-first job-application agent. ATS-first, human-gated, runs on Ollama — never submits, never fabricates."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "Parth Ghayal" }]
-keywords = ["job-search", "ats", "greenhouse", "lever", "ashby", "ollama", "llm", "automation", "playwright"]
+keywords = ["agentic", "ai-agent", "job-search", "ats", "greenhouse", "lever", "ashby", "ollama", "llm", "automation", "playwright"]
 dependencies = [
     "playwright>=1.44",
     "httpx>=0.27",
@@ -20,7 +20,7 @@ dependencies = [
 dev = ["pytest>=8.0", "ruff>=0.5"]
 
 [project.scripts]
-localapply = "localapply.cli:app"
+jobrollo = "jobrollo.cli:app"
 
 [build-system]
 requires = ["hatchling"]

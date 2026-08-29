@@ -1,6 +1,6 @@
 # Architecture
 
-LocalApply is an **autonomous agent**, not a per-site script. One loop fills *any* application
+JobRollo is an **autonomous agent**, not a per-site script. One loop fills *any* application
 form by perceiving its structure, reasoning about it with a local LLM, acting, and verifying —
 then stopping for a human. The hard, brittle part of the domain (every ATS renders forms
 differently) is handled by *generalization*, not by hardcoding one company at a time.

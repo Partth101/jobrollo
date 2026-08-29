@@ -22,7 +22,7 @@ def _norm(label: str) -> str:
 
 
 class Memory:
-    def __init__(self, url: str, store_path: str = ".localapply_memory.json"):
+    def __init__(self, url: str, store_path: str = ".jobrollo_memory.json"):
         self.site = urlparse(url).netloc
         self.store_path = store_path
         self._run: dict[str, str] = {}

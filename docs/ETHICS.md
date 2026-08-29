@@ -1,16 +1,16 @@
 # Ethics & Terms of Service
 
-LocalApply is built on a simple principle: **automate the grunt work, keep a human
+JobRollo is built on a simple principle: **automate the grunt work, keep a human
 accountable.** That shapes every design decision.
 
-## What LocalApply does
+## What JobRollo does
 
 - Reads job postings from **public ATS APIs** the companies themselves publish.
 - Fills application forms the way a fast, honest human would.
 - Uses a **local** LLM so your resume and answers never leave your machine.
 - **Stops at the submit button.** A human reviews and submits every application.
 
-## What LocalApply deliberately does NOT do
+## What JobRollo deliberately does NOT do
 
 - ❌ **No auto-submit.** The code has no path that clicks submit/finish. This is not a
   setting you can flip; it's absent by construction.
@@ -36,6 +36,6 @@ accountable.** That shapes every design decision.
 
 - Verify the accuracy of everything before you submit it.
 - Respect each platform's Terms of Service and rate limits.
-- Don't use LocalApply to impersonate others or misrepresent your qualifications.
+- Don't use JobRollo to impersonate others or misrepresent your qualifications.
 
-If you want a fire-and-forget mass-apply bot, LocalApply is intentionally not that tool.
+If you want a fire-and-forget mass-apply bot, JobRollo is intentionally not that tool.

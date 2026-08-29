@@ -6,7 +6,7 @@ answers.json
 config.yaml
 queue.json
 tracker.json
-.localapply_memory.json
+.jobrollo_memory.json
 resumes/
 *.pdf
 *.docx

@@ -1,4 +1,4 @@
-"""The LocalApply agent: perceive → decide → act → verify, honestly and human-gated."""
+"""The JobRollo agent: perceive → decide → act → verify, honestly and human-gated."""
 from .actions import Action, ActionResult, execute
 from .core import Agent, AgentResult, Flag
 from .memory import Memory

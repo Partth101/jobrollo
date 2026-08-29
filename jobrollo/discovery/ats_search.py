@@ -5,7 +5,7 @@ Greenhouse, Lever, and Ashby each publish a job board API per company:
   * Lever:      https://api.lever.co/v0/postings/{slug}?mode=json
   * Ashby:      https://api.ashbyhq.com/posting-api/job-board/{slug}
 
-You give LocalApply a list of company slugs (companies.txt) and your keywords; it queries
+You give JobRollo a list of company slugs (companies.txt) and your keywords; it queries
 each company's public board and returns roles whose title matches. This is deliberate: it
 keeps discovery on documented public APIs instead of scraping aggregators, and it biases
 toward *direct employers* rather than staffing-firm reposts.

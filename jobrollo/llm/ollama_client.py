@@ -1,7 +1,7 @@
 """Local-first LLM client.
 
 Default backend is Ollama (http://localhost:11434). Anything OpenAI-compatible works too,
-but the whole point of LocalApply is that your resume never has to leave your machine — so
+but the whole point of JobRollo is that your resume never has to leave your machine — so
 Ollama is the default and cloud is opt-in.
 
 The system prompt here is the honesty guardrail: the model is told, in no uncertain terms,

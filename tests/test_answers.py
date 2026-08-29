@@ -1,6 +1,6 @@
 """Tests for the honesty layer — the most important behavior to lock down."""
-from localapply.answers import resolve_answer
-from localapply.llm import ASK_HUMAN
+from jobrollo.answers import resolve_answer
+from jobrollo.llm import ASK_HUMAN
 
 
 class FakeLLM:

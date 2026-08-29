@@ -1,8 +1,8 @@
-"""LocalApply CLI.
+"""JobRollo CLI.
 
-    localapply check                      # verify Ollama + config
-    localapply discover --keywords ...    # build queue.json from public ATS boards
-    localapply apply --queue queue.json   # fill each job, stop at submit (human-gated)
+    jobrollo check                      # verify Ollama + config
+    jobrollo discover --keywords ...    # build queue.json from public ATS boards
+    jobrollo apply --queue queue.json   # fill each job, stop at submit (human-gated)
 """
 from __future__ import annotations
 
@@ -93,10 +93,10 @@ def discover_jobs(
     for j in jobs:
         table.add_row(j.company, j.title, j.ats, j.location)
     console.print(table)
-    console.print("[dim]Review/cull queue.json, then: localapply apply[/]")
+    console.print("[dim]Review/cull queue.json, then: jobrollo apply[/]")
 
 
-# expose as `localapply discover`
+# expose as `jobrollo discover`
 app.command(name="discover")(discover_jobs)
 
 
@@ -119,7 +119,7 @@ def apply(
     llm = load_llm(cfg)
     jobs = load_json(queue)
     console.print(
-        "[bold]LocalApply is human-gated.[/] It will fill each form and stop at submit.\n"
+        "[bold]JobRollo is human-gated.[/] It will fill each form and stop at submit.\n"
         "You review and submit every application yourself.\n"
     )
     run(jobs, profile, answers, llm, cfg)

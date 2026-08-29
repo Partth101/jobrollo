@@ -1,11 +1,11 @@
-# LocalApply
+# JobRollo
 
-**The honest, local-first job-application copilot.** Runs entirely on your own machine
+**The agentic, local-first job-application agent.** Runs entirely on your own machine
 with [Ollama](https://ollama.com) — no API keys, no per-application fees, no data
 leaving your laptop. Targets the **ATS boards other bots can't** (Greenhouse, Lever,
 Ashby), **never auto-submits**, and **never lies on a form**.
 
-> LocalApply is a *copilot*, not an autopilot. It finds matching roles, drafts tailored
+> JobRollo is a *copilot*, not an autopilot. It finds matching roles, drafts tailored
 > answers with a local LLM, fills the application, and **stops at the submit button** so
 > **you** review and submit. That is a deliberate design choice — see [Why human-gated](#why-human-gated).
 
@@ -15,7 +15,7 @@ Ashby), **never auto-submits**, and **never lies on a form**.
 
 The popular auto-apply bots share three problems:
 
-| Problem with most bots | LocalApply's stance |
+| Problem with most bots | JobRollo's stance |
 | --- | --- |
 | **LinkedIn Easy Apply only.** They can't follow a job that redirects to Greenhouse / Lever / Ashby / Workday — which is most of the real market. | **ATS-first.** First-class adapters for Greenhouse, Lever, and Ashby — the boards direct employers actually use. |
 | **Fully hands-free auto-submit** → LinkedIn bot-detection trips, accounts get restricted, and low-quality spray applications hurt your reputation. | **Human-gated.** Fills to the final review page and stops. You review and click submit. No bans, no spray. |
@@ -24,13 +24,13 @@ The popular auto-apply bots share three problems:
 | **Some solve captchas** (hCaptcha/reCAPTCHA) to defeat anti-bot systems. | **Never.** Captchas and logins are yours to clear. We don't defeat anti-abuse systems. |
 
 If you want a bot that blasts 500 applications overnight, this isn't it (and that bot will
-get your LinkedIn banned). LocalApply is for people who want the *grunt work* automated —
+get your LinkedIn banned). JobRollo is for people who want the *grunt work* automated —
 finding roles, tailoring answers, filling forms — while keeping a human in the loop and
 their accounts safe.
 
 ## It's an agent, not a script
 
-Most job bots hardcode one company's form. LocalApply runs an **autonomous agent** that
+Most job bots hardcode one company's form. JobRollo runs an **autonomous agent** that
 **perceives** any application form, **decides** the next action with a local LLM, **acts**,
 **verifies** the effect, and **self-corrects** — then stops for you. That's why it generalizes
 across Greenhouse, Lever, Ashby, and forms it's never seen, instead of breaking on the next
@@ -58,7 +58,7 @@ perceive (page → normalized fields) → decide (LLM plan + grounding guard)
 #    https://ollama.com/download
 ollama pull llama3.1:8b        # or qwen2.5, mistral, etc.
 
-# 2. Install LocalApply
+# 2. Install JobRollo
 pip install -e .
 playwright install chromium
 
@@ -69,13 +69,13 @@ $EDITOR secret.yaml            # model, your details, background, answers, searc
 $EDITOR companies.txt          # which ATS boards to search
 
 # 4. Check the local model is reachable
-localapply check
+jobrollo check
 
 # 5. Discover roles (reads titles/locations from secret.yaml)
-localapply discover
+jobrollo discover
 
 # 6. Review the queue it built, then apply (fills to the submit page and STOPS)
-localapply apply --queue queue.json
+jobrollo apply --queue queue.json
 ```
 
 Everything you configure lives in one git-ignored file, **`secret.yaml`**: which model to
@@ -106,7 +106,7 @@ Three reasons, in order of importance:
 
 ## Ethics & Terms of Service
 
-LocalApply does **not** scrape behind logins, defeat captchas, or auto-submit. It operates
+JobRollo does **not** scrape behind logins, defeat captchas, or auto-submit. It operates
 public ATS application forms the way a fast human would, and always stops for human review.
 Read [docs/ETHICS.md](docs/ETHICS.md) before using it. You are responsible for complying
 with each site's Terms of Service and for the accuracy of everything you submit.
