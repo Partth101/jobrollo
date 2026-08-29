@@ -24,7 +24,7 @@ console = Console()
 
 
 def _load_companies(path: str) -> list[tuple[str, str]]:
-    """companies.txt: one 'ats slug' per line, e.g. 'greenhouse komodohealth'."""
+    """companies.txt: one 'ats slug' per line, e.g. 'greenhouse acme-corp'."""
     out = []
     with open(path) as f:
         for line in f:

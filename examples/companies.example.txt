@@ -1,18 +1,13 @@
-# Seed list of direct-employer ATS boards to search.
-# Format: <ats> <company-slug>   (one per line; '#' comments allowed)
-# Find a company's slug from its careers URL, e.g.
-#   job-boards.greenhouse.io/komodohealth  -> "greenhouse komodohealth"
-#   jobs.lever.co/palantir                 -> "lever palantir"
-#   jobs.ashbyhq.com/rula                  -> "ashby rula"
-
-# --- AI / healthcare examples (verify they're still live) ---
-greenhouse komodohealth
-greenhouse future
-greenhouse machinifyinc
-greenhouse samsara
-lever palantir
-lever collate
-lever upscale-ai
-ashby talkiatry
-ashby rula
-ashby Neuromorphic-Labs
+# JobRollo searches the PUBLIC job-board API of each company listed here.
+# Format:  <ats> <company-slug>   (one per line; lines starting with '#' are comments)
+#
+# Find a company's slug in its careers URL:
+#   job-boards.greenhouse.io/<slug>   ->  greenhouse <slug>
+#   jobs.lever.co/<slug>              ->  lever <slug>
+#   jobs.ashbyhq.com/<slug>           ->  ashby <slug>
+#
+# The three lines below are PLACEHOLDERS to show the format — replace them with
+# the real slugs of companies you actually want to apply to.
+greenhouse acme-corp
+lever globex
+ashby initech

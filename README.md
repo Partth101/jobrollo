@@ -268,14 +268,14 @@ Discovery searches the **public job-board API** of each company you list. Format
 `<ats> <slug>` per line — find the slug in a company's careers URL:
 
 ```txt
-# careers URL                              → line
-# job-boards.greenhouse.io/komodohealth    → greenhouse komodohealth
-# jobs.lever.co/palantir                   → lever palantir
-# jobs.ashbyhq.com/rula                    → ashby rula
+# careers URL                          → line   (slugs below are placeholders)
+# job-boards.greenhouse.io/acme-corp   → greenhouse acme-corp
+# jobs.lever.co/globex                 → lever globex
+# jobs.ashbyhq.com/initech             → ashby initech
 
-greenhouse komodohealth
-lever palantir
-ashby rula
+greenhouse acme-corp
+lever globex
+ashby initech
 ```
 
 ---
@@ -297,12 +297,12 @@ public ATS API, filters by your titles (OR semantics) and location, and writes a
 ```
         7 matching roles → queue.json
 ┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
-┃ Company      ┃ Title                   ┃ ATS        ┃ Location       ┃
-┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
-│ Komodohealth │ Senior AI Engineer      │ greenhouse │ United States  │
-│ Rula         │ Staff AI Engineer       │ ashby      │ Remote - US    │
-│ ...          │ ...                     │ ...        │ ...            │
-└──────────────┴─────────────────────────┴────────────┴────────────────┘
+┃ Company    ┃ Title                   ┃ ATS        ┃ Location       ┃
+┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ Acme Corp  │ Senior AI Engineer      │ greenhouse │ United States  │
+│ Globex     │ Staff AI Engineer       │ ashby      │ Remote - US    │
+│ Initech    │ LLM Engineer            │ lever      │ Remote         │
+└────────────┴─────────────────────────┴────────────┴────────────────┘
 ```
 
 Override any setting with flags:
@@ -324,7 +324,7 @@ For each job, a browser opens; the agent fills the form to the submit page, prin
 filled and what it flagged, then **waits for you**:
 
 ```
-──────────────── 1/7  Komodo Health — Senior AI Engineer ────────────────
+──────────────── 1/7  Acme Corp — Senior AI Engineer ────────────────
 ╭──────────────────────────── agent result ────────────────────────────╮
 │ Résumé attached: True                                                 │
 │ Filled (17): First Name, Last Name, Email, Phone, LinkedIn, Are you   │
