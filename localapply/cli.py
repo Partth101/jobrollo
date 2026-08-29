@@ -48,18 +48,46 @@ def check(config: str = "config.yaml"):
         console.print(f"[red]LLM not reachable:[/] {e}\nIs `ollama serve` running and the model pulled?")
 
 
+def _resolve_search(cfg: dict, keywords: str | None, location: str | None):
+    """Everything is configurable. Precedence: CLI flag > config.search > profile.job_targets."""
+    search = cfg.get("search", {})
+    titles = keywords or search.get("titles")
+    if not titles:  # fall back to the profile's job targets
+        try:
+            jt = load_json(cfg.get("profile", "profile.json")).get("job_targets", {})
+            titles = (jt.get("titles") or []) + (jt.get("keywords") or [])
+        except Exception:
+            titles = []
+    locations = location or search.get("locations")
+    remote_ok = bool(search.get("remote_ok", True))
+    companies = search.get("companies", "companies.txt")
+    return titles, locations, remote_ok, companies
+
+
 @app.command()
 def discover_jobs(
-    keywords: str = typer.Option(..., "--keywords", help="Comma-separated title keywords"),
-    companies: str = typer.Option("companies.txt", help="File of 'ats slug' lines"),
+    keywords: str = typer.Option(None, "--keywords",
+                                 help="Titles as OR-list or 'A OR B'. Omit to use config/profile."),
+    location: str = typer.Option(None, "--location", help="OR-list of locations. Omit to use config."),
+    companies: str = typer.Option(None, help="File of 'ats slug' lines. Omit to use config."),
     out: str = typer.Option("queue.json", help="Where to write the queue"),
     config: str = "config.yaml",
 ):
-    """Search public ATS boards for matching roles and write a reviewable queue."""
+    """Search public ATS boards for matching roles and write a reviewable queue.
+
+    With no flags at all, this reads titles/locations/companies entirely from your
+    config.yaml (or profile.json job_targets). Flags are optional overrides.
+    """
     cfg = load_config(config)
-    kw = [k.strip() for k in keywords.split(",") if k.strip()]
+    titles, locations, remote_ok, comp_file = _resolve_search(cfg, keywords, location)
+    companies = companies or comp_file
+    if not titles:
+        console.print("[red]No search titles found. Set search.titles in config.yaml "
+                      "or job_targets in profile.json.")
+        raise typer.Exit(1)
     comps = _load_companies(companies)
-    jobs = discover(comps, kw, cfg.get("discovery", {}).get("max_per_source", 50))
+    jobs = discover(comps, titles, locations=locations, remote_ok=remote_ok,
+                    max_per_source=cfg.get("discovery", {}).get("max_per_source", 50))
     json.dump([j.as_dict() for j in jobs], open(out, "w"), indent=2)
 
     table = Table(title=f"{len(jobs)} matching roles → {out}")
@@ -68,7 +96,7 @@ def discover_jobs(
     for j in jobs:
         table.add_row(j.company, j.title, j.ats, j.location)
     console.print(table)
-    console.print("[dim]Review/cull queue.json, then: localapply apply --queue queue.json[/]")
+    console.print("[dim]Review/cull queue.json, then: localapply apply[/]")
 
 
 # expose as `localapply discover`
@@ -84,6 +112,13 @@ def apply(
     cfg = load_config(config)
     profile = load_json(cfg.get("profile", "profile.json"))
     answers = load_json(cfg.get("answers", "answers.json"))
+
+    resume = profile.get("resume_path", "")
+    if not resume or not os.path.exists(resume):
+        console.print(f"[red]Résumé not found at '{resume}'.[/] "
+                      "Set resume_path in profile.json to your résumé's location on disk.")
+        raise typer.Exit(1)
+
     llm = load_llm(cfg)
     jobs = load_json(queue)
     console.print(

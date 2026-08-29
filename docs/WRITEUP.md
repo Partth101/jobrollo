@@ -25,7 +25,34 @@ GitHub stars. Yet almost every tool in the category shares the same three flaws:
 I wanted the opposite tool: one that automates the *grunt work* (finding roles, tailoring
 answers, filling forms) while keeping a human accountable and their accounts safe.
 
-## Four design decisions
+## The core idea: an autonomous agent, not a per-site script
+
+Every popular tool in this category hardcodes one company's form. That's fragile (a redesign
+breaks it) and narrow (someone has to write each site by hand). LocalApply instead runs a small
+**autonomous agent** with a classic loop — *perceive → decide → act → verify* — that generalizes
+across forms:
+
+- **Perceive.** A perception layer normalizes any application page into a flat list of
+  interactive fields (`ref, kind, label, options, value, required`) from the DOM and
+  accessibility tree. The agent reasons over *structure*, not brand, so Greenhouse, Lever,
+  Ashby, and unseen forms all look the same to the policy.
+- **Decide.** A hybrid policy: a local LLM *plans* the next action as structured JSON over the
+  whole observation; a deterministic *grounding guard* then checks any proposed value against
+  the candidate's real data and **overrides ungrounded values to a "flag for human" action.**
+  Honesty is enforced in code, not merely requested in a prompt. If the small local model emits
+  malformed JSON, a deterministic fallback keeps the agent moving.
+- **Act.** A typed action space of six tools — and, deliberately, **no submit tool exists.** The
+  agent structurally cannot submit an application or solve a captcha.
+- **Verify + self-correct.** After each action the agent re-perceives, confirms the field
+  actually changed, avoids re-acting the same field, and halts on a no-progress stall or the
+  submit/review step.
+- **Remember.** Working and persisted memory keep answers consistent within and across runs.
+
+The interesting engineering isn't the automation — it's the *constraints*: a general policy
+that is provably honest (ungrounded → flagged) and provably safe (no submit action), running
+entirely on a local model. That combination is what I hadn't seen in the existing tools.
+
+## Four supporting design decisions
 
 ### 1. ATS-first, not LinkedIn-first
 

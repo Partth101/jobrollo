@@ -30,9 +30,36 @@ class Job:
         return asdict(self)
 
 
+def parse_terms(raw) -> list[str]:
+    """Accept a list, or an OR-statement string like 'AI OR LLM OR Healthcare'.
+
+    Both of these mean the same thing (match ANY term):
+        ["AI Engineer", "LLM Engineer", "Healthcare AI"]
+        "AI Engineer OR LLM Engineer OR Healthcare AI"
+        "AI Engineer, LLM Engineer, Healthcare AI"
+    """
+    if raw is None:
+        return []
+    if isinstance(raw, list):
+        return [str(t).strip() for t in raw if str(t).strip()]
+    parts = re.split(r"\s+OR\s+|,", str(raw), flags=re.IGNORECASE)
+    return [p.strip() for p in parts if p.strip()]
+
+
 def _match(title: str, keywords: list[str]) -> bool:
+    """OR semantics: a title matches if it contains ANY of the terms."""
     t = title.lower()
     return any(re.search(re.escape(k.lower()), t) for k in keywords)
+
+
+def _location_ok(location: str, wanted: list[str], remote_ok: bool) -> bool:
+    """Empty `wanted` = accept anywhere. 'remote' in the posting always passes if remote_ok."""
+    loc = (location or "").lower()
+    if remote_ok and "remote" in loc:
+        return True
+    if not wanted:
+        return True
+    return any(w.lower() in loc for w in wanted)
 
 
 def _greenhouse(slug: str, keywords: list[str]) -> list[Job]:
@@ -81,17 +108,23 @@ def _ashby(slug: str, keywords: list[str]) -> list[Job]:
 FETCHERS = {"greenhouse": _greenhouse, "lever": _lever, "ashby": _ashby}
 
 
-def discover(companies: list[tuple[str, str]], keywords: list[str],
-             max_per_source: int = 50) -> list[Job]:
-    """companies: list of (ats, slug). Returns matching Jobs, deduped by url."""
+def discover(companies: list[tuple[str, str]], keywords, *,
+             locations=None, remote_ok: bool = True, max_per_source: int = 50) -> list[Job]:
+    """companies: list of (ats, slug). Returns matching Jobs, deduped by url.
+
+    `keywords` and `locations` may be lists or OR-statement strings — both are parsed with
+    OR semantics (match ANY). Empty locations = anywhere.
+    """
+    terms = parse_terms(keywords)
+    wanted_locs = parse_terms(locations)
     seen: set[str] = set()
     out: list[Job] = []
     for ats, slug in companies:
         fetch = FETCHERS.get(ats)
         if not fetch:
             continue
-        for job in fetch(slug, keywords)[:max_per_source]:
-            if job.url and job.url not in seen:
+        for job in fetch(slug, terms)[:max_per_source]:
+            if job.url and job.url not in seen and _location_ok(job.location, wanted_locs, remote_ok):
                 seen.add(job.url)
                 out.append(job)
     return out

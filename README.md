@@ -28,14 +28,28 @@ get your LinkedIn banned). LocalApply is for people who want the *grunt work* au
 finding roles, tailoring answers, filling forms — while keeping a human in the loop and
 their accounts safe.
 
+## It's an agent, not a script
+
+Most job bots hardcode one company's form. LocalApply runs an **autonomous agent** that
+**perceives** any application form, **decides** the next action with a local LLM, **acts**,
+**verifies** the effect, and **self-corrects** — then stops for you. That's why it generalizes
+across Greenhouse, Lever, Ashby, and forms it's never seen, instead of breaking on the next
+redesign. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+```
+perceive (page → normalized fields) → decide (LLM plan + grounding guard)
+   → act (typed tools) → verify → … → STOP at submit  → you review + submit
+```
+
 ## Features
 
-- 🔍 **Discovery** — searches public ATS boards for roles matching your keywords, dedupes, and builds a reviewable queue.
-- 🧠 **Local answer generation** — tailors resume bullets, cover letters, and screening answers with an Ollama model, grounded strictly in your `profile.json` (no invented experience).
-- 🧩 **ATS adapters** — Greenhouse, Lever, Ashby (incl. iframe-embedded forms). A clean `ATSAdapter` interface makes new boards easy to add.
-- ✋ **Human-gated submit** — fills every field it can, stops at the review page, and prints exactly what it left for you (and why).
-- 🗂 **Answer bank** — reuses your canonical answers (work auth, salary, EEO, common screening Qs) across applications so each one gets faster.
-- 📊 **Tracker** — logs every application, its status, and per-field notes.
+- 🤖 **Autonomous form agent** — a bounded `perceive → decide → act → verify` loop that fills *any* ATS form by reasoning over its structure, not a per-site script.
+- 🛡 **Grounding guard** — every value the agent proposes is checked against your real data; anything ungrounded is **flagged for you**, never fabricated. Honesty is enforced in code.
+- 🚫 **No submit tool, by construction** — the agent structurally *cannot* submit or solve a captcha. It halts at the review step.
+- 🔍 **Discovery** — searches public ATS-board APIs (no scraping) with OR-style titles + location filters, builds a reviewable queue.
+- 🧠 **Local & private** — runs on Ollama; your résumé and profile never leave your machine. No API keys, no per-application cost.
+- 🗂 **Memory** — remembers your answers within and across runs, so repeated fields are instant and consistent.
+- 📊 **Tracker** — logs every application, agent steps, filled fields, and what was flagged.
 
 ## Quick start
 
@@ -64,16 +78,16 @@ You review each filled application in the browser window and click **Submit** yo
 ## How it works
 
 ```
-discover ──► queue.json ──► [ you cull the list ] ──► apply (per job):
-                                                        1. open in browser
-                                                        2. detect ATS (Greenhouse/Lever/Ashby)
-                                                        3. fill contact + upload resume
-                                                        4. generate honest answers via Ollama
-                                                        5. flag anything it can't answer truthfully
-                                                        6. STOP at submit  ──► you review + submit
+discover ─► queue.json ─► [ you cull the list ] ─► apply (per job):
+     the agent loops:  perceive the form ─► decide next action (LLM plan + grounding guard)
+                       ─► act (fill / select / click / upload) ─► verify ─► repeat
+                       ─► STOP at the submit/review step  ─►  you review + submit
 ```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full design and how to add an ATS adapter.
+Everything the user touches is a **file, not code**: `config.yaml` (search titles as an
+OR-list, locations, résumé path via `profile.json`), `profile.json` (personal details),
+`answers.json` (canonical screening answers), `companies.txt` (which ATS boards to search).
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the agent design.
 
 ## Why human-gated?
 
@@ -92,10 +106,11 @@ with each site's Terms of Service and for the accuracy of everything you submit.
 
 ## Status
 
-v0.1 — Greenhouse adapter is the reference implementation; Lever and Ashby adapters are
-functional; discovery and the human-gated runner work end-to-end. Roadmap in
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Contributions welcome — especially new ATS
-adapters.
+v0.1 — the autonomous agent (perception, LLM-planned policy, grounding guard, memory, bounded
+self-correcting loop) and public-API discovery work end-to-end; the honesty guard is covered by
+tests. Optional per-ATS fast-path adapters ship as reference implementations. Roadmap in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Contributions welcome — especially perception
+coverage for new boards (Workday, iCIMS).
 
 ## License
 
