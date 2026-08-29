@@ -15,10 +15,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+import re
+
 from .actions import Action, execute
 from .memory import Memory
 from .perception import Observation, perceive
 from .policy import Policy
+
+
+def _key(label: str) -> str:
+    """Stable identity for a field across re-perceptions: its normalized label."""
+    return re.sub(r"\s+", " ", (label or "").strip().lower())
 
 
 @dataclass
@@ -46,7 +53,10 @@ class Agent:
     def run(self, page, profile: dict, answers: dict) -> AgentResult:
         mem = Memory(page.url)
         res = AgentResult(url=page.url)
-        stalls = 0
+        # Loop-avoidance keys on the field LABEL, not the positional ref: perception
+        # reassigns f0..fN every cycle, and choice/select fields don't report a value back,
+        # so a ref- or value-based guard would re-act them forever.
+        handled: set[str] = set()
 
         for step in range(self.step_budget):
             res.steps = step + 1
@@ -56,8 +66,7 @@ class Agent:
                 res.stopped_reason = "reached submit/review step — human gate"
                 break
 
-            # Only consider fields we haven't already acted on this run (loop avoidance).
-            pending = [f for f in obs.actionable() if f.ref not in mem.acted_refs()]
+            pending = [f for f in obs.actionable() if _key(f.label) not in handled]
             if not pending:
                 res.stopped_reason = "no actionable fields left"
                 break
@@ -69,15 +78,10 @@ class Agent:
                 res.stopped_reason = "policy finished"
                 break
 
+            label = self._label(obs, action.ref)
             self._apply(action, page, obs, res, mem)
-
-            # progress check: if the acted field didn't change, count a stall and move on
-            if action.ref:
-                mem.mark_acted(action.ref)
-            stalls = stalls + 1 if not self._progressed(page, action) else 0
-            if stalls >= 5:
-                res.stopped_reason = "no progress — stopping for human review"
-                break
+            if action.tool != "upload_resume":       # résumé has no single label
+                handled.add(_key(label))
 
         mem.flush()
         return res

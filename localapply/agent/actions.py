@@ -55,44 +55,73 @@ def _fill_text(a: Action, page, _r) -> ActionResult:
     return ActionResult(ok=True, detail=f"typed into {a.ref}")
 
 
+import re
+
+# Phrases that all mean "decline / no answer", so EEO options match across sites.
+_DECLINE = ("decline", "do not want", "don't want", "dont want", "prefer not",
+            "don't wish", "dont wish", "do not wish", "not to answer", "wish not")
+
+
+def _best_match(want: str, texts: list[str]) -> int | None:
+    """Index of the option that best matches `want`, or None. Robust to EEO phrasing."""
+    w = (want or "").strip().lower()
+    if not w:
+        return None
+    norm = [t.strip().lower() for t in texts]
+    for i, t in enumerate(norm):                       # exact
+        if t == w:
+            return i
+    for i, t in enumerate(norm):                       # substring either direction
+        if t and (w in t or t in w):
+            return i
+    if any(d in w for d in _DECLINE):                  # decline synonyms
+        for i, t in enumerate(norm):
+            if any(d in t for d in _DECLINE):
+                return i
+    wt = set(re.findall(r"[a-z]+", w))                 # token overlap
+    best, score = None, 0
+    for i, t in enumerate(norm):
+        s = len(wt & set(re.findall(r"[a-z]+", t)))
+        if s > score:
+            best, score = i, s
+    return best if score >= 2 else None
+
+
 def _select_option(a: Action, page, _r) -> ActionResult:
     loc = _loc(page, a.ref)
-    # native <select> first
-    try:
-        loc.select_option(label=a.value)
-        return ActionResult(ok=True, detail=f"selected {a.value}")
+    try:                                               # native <select>
+        opts = [o.inner_text() for o in loc.locator("option").all()]
+        idx = _best_match(a.value, opts)
+        if idx is not None:
+            loc.select_option(label=opts[idx].strip())
+            return ActionResult(ok=True, detail=f"selected {opts[idx].strip()}")
     except Exception:
         pass
-    # react-select / custom: open then click the matching option
-    loc.click()
-    page.wait_for_timeout(300)
-    want = (a.value or "").strip().lower()
-    for opt in page.query_selector_all("[role=option], .select__option, li[role=option]"):
-        if want and want in opt.inner_text().strip().lower():
-            opt.click()
-            return ActionResult(ok=True, detail=f"picked {a.value}")
+    loc.click()                                        # react-select: open, then click option
+    page.wait_for_timeout(350)
+    els = page.query_selector_all("[role=option], .select__option, li[role=option]")
+    idx = _best_match(a.value, [e.inner_text() for e in els])
+    if idx is not None:
+        els[idx].click()
+        return ActionResult(ok=True, detail=f"picked {els[idx].inner_text().strip()}")
     return ActionResult(ok=False, detail=f"no option matched {a.value!r}")
 
 
 def _click_choice(a: Action, page, _r) -> ActionResult:
-    want = (a.value or "").strip().lower()
     scope = _loc(page, a.ref)
+    pool = []
     for sel in ("button", "input[type=radio]", "label", "[role=option]"):
-        for el in scope.locator(sel).all() if scope.count() else page.locator(sel).all():
-            try:
-                if want and want == el.inner_text().strip().lower():
-                    el.click()
-                    return ActionResult(ok=True, detail=f"clicked {a.value}")
-            except Exception:
-                continue
-    # fall back to substring match
-    for el in page.locator("button, [role=option], label").all():
+        pool += (scope.locator(sel).all() if scope.count() else page.locator(sel).all())
+    texts = []
+    for el in pool:
         try:
-            if want and want in el.inner_text().strip().lower():
-                el.click()
-                return ActionResult(ok=True, detail=f"clicked ~{a.value}")
+            texts.append(el.inner_text())
         except Exception:
-            continue
+            texts.append("")
+    idx = _best_match(a.value, texts)
+    if idx is not None:
+        pool[idx].click()
+        return ActionResult(ok=True, detail=f"clicked {texts[idx].strip()}")
     return ActionResult(ok=False, detail=f"no choice matched {a.value!r}")
 
 

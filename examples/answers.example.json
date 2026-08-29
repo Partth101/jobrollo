@@ -17,5 +17,9 @@
   "race_ethnicity": "Decline to self-identify",
   "veteran_status": "I am not a protected veteran",
   "disability_status": "I don't wish to answer",
-  "typescript_production_experience": "ASK_HUMAN"
+  "typescript_production_experience": "ASK_HUMAN",
+  "currently_reside_us": "Yes",
+  "earliest_start": "2 weeks",
+  "notice_period": "2 weeks",
+  "hispanic_latino": "No"
 }

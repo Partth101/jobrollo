@@ -29,12 +29,16 @@ BANK_PATTERNS: list[tuple[str, str]] = [
     (r"referr?ed (you|by)|employee refer", "referred_by_employee"),
     (r"years.*experience", "years_experience"),
     (r"gender", "gender"),
-    (r"hispanic|latino|race|ethnicity", "race_ethnicity"),
+    (r"hispanic|latino", "hispanic_latino"),   # a Yes/No question, distinct from race
+    (r"race|ethnicity", "race_ethnicity"),
     (r"veteran", "veteran_status"),
     (r"disability", "disability_status"),
     (r"comfortable.*remote|open to remote", "comfortable_remote"),
     (r"comfortable.*hybrid|open to hybrid", "comfortable_hybrid"),
     (r"comfortable.*onsite|on-?site|commut", "comfortable_onsite"),
+    (r"currently reside|do you reside|reside in the (us|united states)", "currently_reside_us"),
+    (r"start date|when can you start|available to start|earliest", "earliest_start"),
+    (r"notice period", "notice_period"),
 ]
 
 

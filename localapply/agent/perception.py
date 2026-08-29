@@ -13,12 +13,14 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field as dc_field
 
-# Signals that we've reached a terminal review/submit step. The agent STOPS here — it never
-# submits. Detection is intentionally generous: a false "stop" is safe; a false "continue"
-# risks clicking submit, which must never happen.
+# Signals that we've landed on a POST-submission confirmation page — the agent must not try
+# to "fill" a thank-you page. NOTE: we deliberately do NOT match a "Submit application" button,
+# because that button is always present on the fill form; matching it would halt us before we
+# ever fill anything. The normal stop condition is simply "no actionable fields left" — the
+# human then clicks submit. There is no submit tool, so we can never submit by accident.
 SUBMIT_SIGNALS = re.compile(
-    r"\b(submit application|submit your application|review your application|"
-    r"thank you for applying|application submitted)\b",
+    r"(thank you for applying|application (was )?submitted|"
+    r"application has been (received|submitted)|we('| ha)ve received your application)",
     re.IGNORECASE,
 )
 
@@ -99,10 +101,17 @@ def _extract_fields(page) -> list[Field]:
             kind, options, value = _classify(el)
             if kind is None:
                 continue
-            add(el, kind, _label_for(el), options, value, _required(el))
+            label = _label_for(el)
+            if label.strip().lower() in {"search", "search jobs", "keyword"}:
+                continue  # site/location search boxes, not application questions
+            add(el, kind, label, options, value, _required(el))
         except Exception:
             continue
     return fields
+
+
+# The résumé upload widget renders as a button group; the real work is done by the file input.
+RESUME_WIDGET_OPTS = {"attach", "dropbox", "google drive", "enter manually"}
 
 
 def _classify(el):
@@ -120,12 +129,31 @@ def _classify(el):
         opts = [o.inner_text().strip() for o in el.query_selector_all("option")]
         return "select", opts, ""
     if tag == "input":
+        # A React-select / autocomplete renders as a text input inside a select control.
+        # Treat it as a dropdown so the action layer opens it and clicks the option.
+        if _is_combo(el):
+            return "select", [], ""
         return "text", [], el.input_value() if _has_value(el) else ""
     role = (el.get_attribute("role") or "").lower()
     if role in {"combobox", "radiogroup", "group"}:
         opts = [o.inner_text().strip() for o in el.query_selector_all("[role=option], button, label")]
-        return "choice", [o for o in opts if o], ""
+        opts = [o for o in opts if o]
+        # Skip the résumé button-group; the file input handles the actual upload.
+        if opts and {o.lower() for o in opts} & RESUME_WIDGET_OPTS:
+            return None, None, None
+        return "choice", opts, ""
     return None, None, None
+
+
+def _is_combo(el) -> bool:
+    try:
+        return bool(el.evaluate(
+            "e => (e.getAttribute('role')||'')==='combobox' "
+            "|| e.getAttribute('aria-autocomplete')!=null "
+            "|| !!e.closest('.select__control,[class*=select__control],[class*=Select__control]')"
+        ))
+    except Exception:
+        return False
 
 
 def _has_value(el) -> bool:

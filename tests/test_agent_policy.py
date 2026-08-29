@@ -1,23 +1,20 @@
 """Tests for the agent's decision policy — especially the grounding guard.
 
-The guarantee under test: the agent uses grounded answers where they exist, and *cannot*
-fill a field it can't answer truthfully — it must flag it. Honesty is enforced by code.
+The guarantee under test: the policy fills a field only with a value grounded in the
+candidate's real data; anything it can't ground truthfully becomes `flag_for_human`.
+The loop picks the field; the policy decides how to handle it. Honesty is enforced in code.
 """
-import json
 import tempfile
 
 from localapply.agent.memory import Memory
 from localapply.agent.perception import Field, Observation
-from localapply.agent.policy import PLANNER_SYSTEM, Policy
+from localapply.agent.policy import Policy
 from localapply.llm import ASK_HUMAN
 
 
 class FakeLLM:
-    """Planner returns a (deliberately wrong) value; honesty calls return ASK_HUMAN."""
+    """Honesty/free-text calls return ASK_HUMAN, so any un-grounded field must be flagged."""
     def generate(self, prompt, system=None):
-        if system == PLANNER_SYSTEM:
-            return json.dumps({"tool": "click_choice", "ref": "f0",
-                               "value": "FABRICATED", "reason": "planner guess"})
         return ASK_HUMAN
 
 
@@ -29,14 +26,13 @@ def _mem():
 PROFILE = {"identity": {"email": "j@x.com"}, "location": {}, "links": {}}
 
 
-def test_guard_overrides_planner_with_grounded_value():
-    """Planner says 'FABRICATED'; guard must replace it with the grounded bank answer."""
+def test_grounded_value_from_bank_is_used():
     obs = Observation("u", [Field("f0", "choice", "Do you require visa sponsorship?",
                                   ["Yes", "No"], required=True)])
     answers = {"require_sponsorship_now_or_future": "Yes"}
     action = Policy(FakeLLM()).decide(obs, PROFILE, answers, _mem())
     assert action.tool == "click_choice"
-    assert action.value == "Yes"          # grounded, NOT the planner's fabrication
+    assert action.value == "Yes"
 
 
 def test_unanswerable_field_is_flagged_not_fabricated():
@@ -44,6 +40,11 @@ def test_unanswerable_field_is_flagged_not_fabricated():
                                   required=True)])
     action = Policy(FakeLLM()).decide(obs, PROFILE, {}, _mem())
     assert action.tool == "flag_for_human"
+
+
+def test_resume_field_triggers_upload():
+    obs = Observation("u", [Field("f0", "file", "Resume/CV", required=True)])
+    assert Policy(FakeLLM()).decide(obs, PROFILE, {}, _mem()).tool == "upload_resume"
 
 
 def test_submit_step_finishes_without_acting():
