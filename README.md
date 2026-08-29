@@ -13,6 +13,19 @@ Runs entirely on your machine with [Ollama](https://ollama.com) — no API keys,
 [![Playwright](https://img.shields.io/badge/browser-Playwright-2EAD33.svg)](https://playwright.dev)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
 
+**Supported application platforms**
+
+[![Greenhouse](https://img.shields.io/badge/Greenhouse-supported-24A47C.svg)](#supported-ats-platforms)
+[![Lever](https://img.shields.io/badge/Lever-supported-5555FF.svg)](#supported-ats-platforms)
+[![Ashby](https://img.shields.io/badge/Ashby-partial-8A63D2.svg)](#supported-ats-platforms)
+[![Workday](https://img.shields.io/badge/Workday-roadmap-lightgrey.svg)](#supported-ats-platforms)
+[![iCIMS](https://img.shields.io/badge/iCIMS-roadmap-lightgrey.svg)](#supported-ats-platforms)
+
+*JobRollo works the **ATS boards** where applications actually live — **Greenhouse, Lever, Ashby** today,
+with **Workday & iCIMS** on the roadmap. It deliberately does **not** automate **LinkedIn, Indeed, or
+Glassdoor**: those sites ban automated accounts, so JobRollo instead applies through the ATS the posting
+redirects to — keeping your accounts safe.*
+
 </div>
 
 ---
