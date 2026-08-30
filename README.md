@@ -177,13 +177,17 @@ playwright install chromium
 ### 4. Verify the install
 
 ```bash
-# copy the config template and the example company list
+# copy the config template and fill it in (model, your details, answers, search)
 cp secret.example.yaml secret.yaml
-cp examples/companies.example.txt companies.txt
 
 # check the local model is reachable
 jobrollo check
 ```
+
+> **No company list required.** `jobrollo discover` searches a **built-in, verified list of
+> 49+ companies** (Databricks, OpenAI, Stripe, Anthropic, …) out of the box and returns
+> matches **sorted newest-first**. Drop in your own `companies.txt` only if you want to
+> customize which boards it searches.
 
 Expected output:
 ```
@@ -303,19 +307,19 @@ The workflow is three steps: **discover → review → apply**.
 jobrollo discover
 ```
 
-Reads your `search.titles` / `locations` / `companies` from `secret.yaml`, queries each company's
-public ATS API, filters by your titles (OR semantics) and location, and writes a reviewable
-`queue.json`. Example output:
+Reads your `search.titles` / `locations` from `secret.yaml`, queries the **built-in company list**
+(or your `companies.txt`) in parallel via each company's public ATS API, filters by your titles
+(OR semantics) and location, and writes a reviewable `queue.json` **sorted newest-first**. Example:
 
 ```
-        7 matching roles → queue.json
-┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
-┃ Company    ┃ Title                   ┃ ATS        ┃ Location       ┃
-┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
-│ Acme Corp  │ Senior AI Engineer      │ greenhouse │ United States  │
-│ Globex     │ Staff AI Engineer       │ ashby      │ Remote - US    │
-│ Initech    │ LLM Engineer            │ lever      │ Remote         │
-└────────────┴─────────────────────────┴────────────┴────────────────┘
+        88 matching roles (latest first) → queue.json
+┏━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃ Posted     ┃ Company    ┃ Title                   ┃ ATS        ┃ Location       ┃
+┡━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ 2026-08-29 │ Acme Corp  │ Senior AI Engineer      │ greenhouse │ United States  │
+│ 2026-08-29 │ Globex     │ Staff AI Engineer       │ ashby      │ Remote - US    │
+│ 2026-08-28 │ Initech    │ LLM Engineer            │ lever      │ Remote         │
+└────────────┴────────────┴─────────────────────────┴────────────┴────────────────┘
 ```
 
 Override any setting with flags:
@@ -333,8 +337,10 @@ Open `queue.json` and **delete anything you don't want to apply to**. This is yo
 jobrollo apply --queue queue.json
 ```
 
-For each job, a browser opens; the agent fills the form to the submit page, prints exactly what it
-filled and what it flagged, then **waits for you**:
+By default (`browser.keep_tabs_open: true`) JobRollo **opens each job in its own browser tab and
+leaves them all open** — the agent fills each to the submit page, and at the end you review the
+whole batch of tabs and submit the ones you want. (Set `keep_tabs_open: false` to instead go one
+at a time, pausing after each.) For each job it prints exactly what it filled and what it flagged:
 
 ```
 ──────────────── 1/7  Acme Corp — Senior AI Engineer ────────────────

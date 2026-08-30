@@ -27,6 +27,15 @@ def run(jobs: list[dict], profile: dict, answers: dict, llm, cfg: dict) -> None:
     agent = Agent(llm, resume_path=profile["resume_path"],
                   step_budget=cfg.get("runner", {}).get("step_budget", 60))
 
+    keep_open = b.get("keep_tabs_open", True)
+    throttle = b.get("throttle_between_jobs_s", 30)
+
+    if keep_open and len(jobs) > b.get("max_open_tabs", 15):
+        n = b.get("max_open_tabs", 15)
+        console.print(f"[yellow]{len(jobs)} jobs found; opening the latest {n} "
+                      f"(raise browser.max_open_tabs to open more).[/]")
+        jobs = jobs[:n]
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=b.get("headless", False),
                                     slow_mo=b.get("slow_mo_ms", 250))
@@ -48,7 +57,8 @@ def run(jobs: list[dict], profile: dict, answers: dict, llm, cfg: dict) -> None:
             except Exception as e:  # noqa: BLE001
                 console.print(f"[red]Error: {e}")
                 tracker.record(job, status="error", note=str(e))
-                page.close()
+                if not keep_open:
+                    page.close()
                 continue
 
             _report(result)
@@ -58,6 +68,12 @@ def run(jobs: list[dict], profile: dict, answers: dict, llm, cfg: dict) -> None:
                            resume=result.resume_attached,
                            stopped=result.stopped_reason)
 
+            if keep_open:
+                # Leave every filled job open in its own tab; you review the whole batch below.
+                if i < len(jobs):
+                    time.sleep(throttle)
+                continue
+
             console.print(
                 "\n[bold cyan]Review the form in the browser, then submit it yourself.[/]\n"
                 "Press [bold]Enter[/] when done (or 's' to skip)…"
@@ -65,9 +81,14 @@ def run(jobs: list[dict], profile: dict, answers: dict, llm, cfg: dict) -> None:
             if input("> ").strip().lower() == "s":
                 tracker.record(job, status="skipped_by_user")
             page.close()
-
             if i < len(jobs):
-                time.sleep(b.get("throttle_between_jobs_s", 30))
+                time.sleep(throttle)
+
+        if keep_open:
+            console.print(f"\n[green]{len(jobs)} applications filled and left open in their own "
+                          f"tabs.[/] Review each, handle any flagged fields, and submit yourself.")
+            console.print("[bold cyan]Press Enter here when you're done to close the browser…[/]")
+            input("> ")
 
         browser.close()
     console.print(f"\n[green]Done. Tracker: {tracker.path}[/]")

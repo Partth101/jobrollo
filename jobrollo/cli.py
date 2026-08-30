@@ -15,7 +15,7 @@ from rich.table import Table
 
 from .answers import load_json
 from .config import load_config
-from .discovery import discover
+from .discovery import discover, seed_companies_path
 from .llm import load_llm
 from .resume import extract_resume_text
 from .runner import run
@@ -79,20 +79,27 @@ def discover_jobs(
     """
     cfg = load_config(config)
     titles, locations, remote_ok, comp_file = _resolve_search(cfg, keywords, location)
-    companies = companies or comp_file
     if not titles:
         console.print("[red]No search titles found. Set search.titles in secret.yaml.")
         raise typer.Exit(1)
-    comps = _load_companies(companies)
+
+    # Use the user's companies.txt if present, else the built-in verified list.
+    companies_file = companies or comp_file
+    if not companies_file or not os.path.exists(companies_file):
+        companies_file = seed_companies_path()
+        console.print("[dim]No companies.txt found — searching JobRollo's built-in company "
+                      "list. Add a companies.txt to customize.[/]")
+
+    comps = _load_companies(companies_file)
     jobs = discover(comps, titles, locations=locations, remote_ok=remote_ok,
                     max_per_source=cfg.get("discovery", {}).get("max_per_source", 50))
     json.dump([j.as_dict() for j in jobs], open(out, "w"), indent=2)
 
-    table = Table(title=f"{len(jobs)} matching roles → {out}")
-    for c in ("Company", "Title", "ATS", "Location"):
+    table = Table(title=f"{len(jobs)} matching roles (latest first) → {out}")
+    for c in ("Posted", "Company", "Title", "ATS", "Location"):
         table.add_column(c)
     for j in jobs:
-        table.add_row(j.company, j.title, j.ats, j.location)
+        table.add_row(j.posted or "—", j.company, j.title, j.ats, j.location)
     console.print(table)
     console.print("[dim]Review/cull queue.json, then: jobrollo apply[/]")
 

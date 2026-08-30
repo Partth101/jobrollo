@@ -13,7 +13,10 @@ toward *direct employers* rather than staffing-firm reposts.
 from __future__ import annotations
 
 import re
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, asdict
+from datetime import datetime, timezone
+from pathlib import Path
 
 import httpx
 
@@ -25,9 +28,27 @@ class Job:
     location: str
     ats: str
     url: str
+    posted: str = ""          # YYYY-MM-DD, best-effort; used to sort latest-first
 
     def as_dict(self) -> dict:
         return asdict(self)
+
+
+def seed_companies_path() -> str:
+    """Path to the built-in company list shipped with JobRollo."""
+    return str(Path(__file__).resolve().parent.parent / "data" / "companies_seed.txt")
+
+
+def _iso_day(value) -> str:
+    """Normalize a date/epoch to 'YYYY-MM-DD' (empty on failure)."""
+    if not value:
+        return ""
+    try:
+        if isinstance(value, (int, float)):        # epoch ms (Lever)
+            return datetime.fromtimestamp(value / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
+        return str(value)[:10]                      # ISO string (Greenhouse/Ashby)
+    except Exception:
+        return ""
 
 
 def parse_terms(raw) -> list[str]:
@@ -72,7 +93,7 @@ def _greenhouse(slug: str, keywords: list[str]) -> list[Job]:
     for j in data.get("jobs", []):
         if _match(j.get("title", ""), keywords):
             jobs.append(Job(slug.title(), j["title"], j.get("location", {}).get("name", ""),
-                            "greenhouse", j["absolute_url"]))
+                            "greenhouse", j["absolute_url"], _iso_day(j.get("updated_at"))))
     return jobs
 
 
@@ -87,7 +108,7 @@ def _lever(slug: str, keywords: list[str]) -> list[Job]:
         if _match(j.get("text", ""), keywords):
             jobs.append(Job(slug.title(), j["text"],
                             j.get("categories", {}).get("location", ""),
-                            "lever", j["hostedUrl"]))
+                            "lever", j["hostedUrl"], _iso_day(j.get("createdAt"))))
     return jobs
 
 
@@ -101,7 +122,8 @@ def _ashby(slug: str, keywords: list[str]) -> list[Job]:
     for j in data.get("jobs", []):
         if _match(j.get("title", ""), keywords):
             jobs.append(Job(slug.title(), j["title"], j.get("location", ""),
-                            "ashby", j.get("jobUrl") or j.get("applyUrl", "")))
+                            "ashby", j.get("jobUrl") or j.get("applyUrl", ""),
+                            _iso_day(j.get("publishedAt") or j.get("publishedDate"))))
     return jobs
 
 
@@ -117,14 +139,25 @@ def discover(companies: list[tuple[str, str]], keywords, *,
     """
     terms = parse_terms(keywords)
     wanted_locs = parse_terms(locations)
+
+    # Query every company's board in parallel — 50+ boards would be slow one at a time.
+    def _fetch(pair):
+        ats, slug = pair
+        fn = FETCHERS.get(ats)
+        return fn(slug, terms)[:max_per_source] if fn else []
+
+    results: list[Job] = []
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        for batch in ex.map(_fetch, companies):
+            results.extend(batch)
+
     seen: set[str] = set()
     out: list[Job] = []
-    for ats, slug in companies:
-        fetch = FETCHERS.get(ats)
-        if not fetch:
-            continue
-        for job in fetch(slug, terms)[:max_per_source]:
-            if job.url and job.url not in seen and _location_ok(job.location, wanted_locs, remote_ok):
-                seen.add(job.url)
-                out.append(job)
+    for job in results:
+        if job.url and job.url not in seen and _location_ok(job.location, wanted_locs, remote_ok):
+            seen.add(job.url)
+            out.append(job)
+
+    # Latest first (jobs with no date sort to the bottom).
+    out.sort(key=lambda j: j.posted or "", reverse=True)
     return out
