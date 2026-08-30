@@ -77,11 +77,15 @@ def resolve_answer(label: str, profile: dict, answers: dict, llm) -> str:
     if "zip" in ll or "postal" in ll:
         return loc.get("zip", "") or ASK_HUMAN
 
-    # 3. Free-text → local LLM, grounded in the profile (may itself return ASK_HUMAN).
+    # 3. Free-text → local LLM, grounded in the profile AND résumé (may return ASK_HUMAN).
+    prof = {k: v for k, v in profile.items() if k not in ("resume_text", "resume_path")}
+    resume_text = profile.get("resume_text", "")
     prompt = (
-        f"Candidate profile (JSON):\n{json.dumps(profile)}\n\n"
-        f"Form question:\n{label}\n\n"
-        "Write a truthful answer grounded only in the profile, or ASK_HUMAN if you cannot."
+        f"CANDIDATE PROFILE (JSON):\n{json.dumps(prof)}\n\n"
+        + (f"CANDIDATE RÉSUMÉ (verbatim text):\n{resume_text}\n\n" if resume_text else "")
+        + f"FORM QUESTION:\n{label}\n\n"
+        "Write a truthful, specific answer grounded ONLY in the profile and résumé above. "
+        "If they don't support an answer, reply ASK_HUMAN."
     )
     out = llm.generate(prompt).strip()
     # Guard: if the model wandered off, treat suspiciously-empty answers as a flag.

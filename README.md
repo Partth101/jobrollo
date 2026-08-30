@@ -108,7 +108,7 @@ Most auto-apply bots share three problems. JobRollo is built to be the opposite:
 ```
 
 - **Perceive** — normalizes any application page into a flat list of fields (`label, kind, options, required`).
-- **Decide** — resolves each field's value from your answer bank → profile facts → the local LLM, under a **grounding guard** that flags anything it can't answer truthfully.
+- **Decide** — resolves each field's value from your answer bank → profile facts → the local LLM (grounded in your **parsed résumé** + `background`), under a **grounding guard** that flags anything it can't answer truthfully.
 - **Act** — a typed action space of six tools. **There is no `submit` tool** — the agent structurally cannot submit.
 - **Verify + remember** — re-reads the form, avoids re-acting a field, and remembers answers within and across runs.
 

@@ -17,6 +17,7 @@ from .answers import load_json
 from .config import load_config
 from .discovery import discover
 from .llm import load_llm
+from .resume import extract_resume_text
 from .runner import run
 
 app = typer.Typer(add_completion=False, help="The honest, local-first job-application copilot.")
@@ -115,6 +116,12 @@ def apply(
         console.print(f"[red]Résumé not found at '{resume}'.[/] "
                       "Set profile.resume_path in secret.yaml to your résumé's location on disk.")
         raise typer.Exit(1)
+
+    # Extract résumé text once so the LLM can ground open-ended answers in it.
+    profile["resume_text"] = extract_resume_text(resume)
+    if profile["resume_text"]:
+        console.print(f"[dim]Loaded résumé text for answer grounding "
+                      f"({len(profile['resume_text'])} chars).[/]")
 
     llm = load_llm(cfg)
     jobs = load_json(queue)
